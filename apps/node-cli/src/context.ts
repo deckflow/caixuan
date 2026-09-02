@@ -32,6 +32,7 @@ export class Context {
         token: this.config.token,
         spaceId: this.config.spaceId,
         userId: this.config.userId,
+        basicAuth: this.config.basicAuth,
         onUnauthorized: async () => {
           const reason = this.config.token ? 'unauthorized' : 'explicit';
           const token = await this.ensureLoggedIn(3737, reason);
@@ -42,6 +43,7 @@ export class Context {
       this._client.setToken(this.config.token);
       if (this.config.spaceId) this._client.setSpaceId(this.config.spaceId);
       if (this.config.userId) this._client.setUserId(this.config.userId);
+      this._client.setBasicAuth(this.config.basicAuth);
     }
 
     return this._client;
@@ -57,6 +59,7 @@ export class Context {
         apiBase: this.config.apiBase,
         port,
         jsonOutput: this.jsonOutput,
+        basicAuth: this.config.basicAuth,
         reason,
       });
 

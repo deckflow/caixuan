@@ -72,20 +72,46 @@ export function normalizeLoginBase(apiBase: string): string {
   return `${u.origin}${u.pathname}`.replace(/\/$/, '');
 }
 
-export function buildLoginUrl(apiBase: string, callbackUrl: string): string {
+export function applyBasicAuthToUrl(url: string, basicAuth?: string): string {
+  if (!basicAuth) return url;
+
+  const sep = basicAuth.indexOf(':');
+  if (sep <= 0 || sep === basicAuth.length - 1) return url;
+
+  const u = new URL(url);
+  u.username = basicAuth.slice(0, sep);
+  u.password = basicAuth.slice(sep + 1);
+  return u.toString();
+}
+
+export function maskBasicAuthInUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    if (!u.username) return url;
+    if (u.password) u.password = '***';
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
+export function buildLoginUrl(apiBase: string, callbackUrl: string, basicAuth?: string): string {
   const loginBase = normalizeLoginBase(apiBase);
-  return `${loginBase}/cli/auth?redirect_url=${encodeURIComponent(callbackUrl)}`;
+  const url = `${loginBase}/cli/auth?redirect_url=${encodeURIComponent(callbackUrl)}`;
+  return applyBasicAuthToUrl(url, basicAuth);
 }
 
 export async function runLoginFlow(options: {
   apiBase: string;
   port: number;
   jsonOutput: boolean;
+  basicAuth?: string;
   reason?: 'explicit' | 'unauthorized';
 }): Promise<{ token: string; spaceId?: string }> {
   const isZh = isChineseCliLocale();
   const callbackUrl = `http://localhost:${options.port}`;
-  const loginUrl = buildLoginUrl(options.apiBase, callbackUrl);
+  const loginUrl = buildLoginUrl(options.apiBase, callbackUrl, options.basicAuth);
+  const displayLoginUrl = maskBasicAuthInUrl(loginUrl);
 
   if (!options.jsonOutput) {
     if (options.reason === 'unauthorized') {
@@ -93,7 +119,7 @@ export async function runLoginFlow(options: {
     } else {
       console.log(chalk.cyan('\n🔐 Caixuan Login\n'));
     }
-    console.log(`Opening browser to: ${chalk.underline(loginUrl)}`);
+    console.log(`Opening browser to: ${chalk.underline(displayLoginUrl)}`);
     console.log(chalk.dim(`Waiting for authentication on port ${options.port}...\n`));
   }
 
@@ -104,7 +130,7 @@ export async function runLoginFlow(options: {
   } catch {
     if (!options.jsonOutput) {
       console.log(chalk.yellow(isZh ? '\n无法自动打开浏览器。' : '\nUnable to open browser automatically.'));
-      console.log(`${isZh ? '请手动打开此链接：' : 'Please open this link manually:'}\n${chalk.cyan(loginUrl)}\n`);
+      console.log(`${isZh ? '请手动打开此链接：' : 'Please open this link manually:'}\n${chalk.cyan(displayLoginUrl)}\n`);
     }
   }
 

@@ -32,6 +32,7 @@ export interface CaixuanClient {
   setToken(token: string | undefined): void;
   setSpaceId(spaceId: string | undefined): void;
   setUserId(userId: string | undefined): void;
+  setBasicAuth(basicAuth: string | undefined): void;
 }
 
 export function createCaixuan(options: CreateCaixuanOptions = {}): CaixuanClient {
@@ -48,5 +49,6 @@ export function createCaixuan(options: CreateCaixuanOptions = {}): CaixuanClient
     setToken: (token) => http.setToken(token),
     setSpaceId: (spaceId) => http.setSpaceId(spaceId),
     setUserId: (userId) => http.setUserId(userId),
+    setBasicAuth: (basicAuth) => http.setBasicAuth(basicAuth),
   };
 }

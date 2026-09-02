@@ -27,6 +27,8 @@ export interface CreateCaixuanOptions {
   spaceId?: string;
   userId?: string;
   lang?: Lang;
+  /** nginx HTTP Basic Auth credentials in `username:password` form */
+  basicAuth?: string;
   onUnauthorized?: () => Promise<{ token: string; spaceId?: string; userId?: string } | string>;
 }
 

@@ -16,6 +16,7 @@ export class HttpClient {
   public spaceId?: string;
   public userId?: string;
   public lang: 'zh' | 'en';
+  public basicAuth?: string;
   private spaceIdExplicit = false;
   private resolvedSpaceIdPromise?: Promise<string>;
   private authRefreshPromise?: Promise<AuthRefreshResult>;
@@ -27,6 +28,7 @@ export class HttpClient {
     this.spaceId = options.spaceId;
     this.userId = options.userId;
     this.lang = options.lang ?? 'zh';
+    this.basicAuth = options.basicAuth;
     this.spaceIdExplicit = Boolean(options.spaceId);
     this.onUnauthorized = options.onUnauthorized;
 
@@ -97,6 +99,11 @@ export class HttpClient {
 
   setUserId(userId: string | undefined): void {
     this.userId = userId;
+  }
+
+  setBasicAuth(basicAuth: string | undefined): void {
+    this.basicAuth = basicAuth;
+    this.applyAuthHeaders();
   }
 
   async resolveSpaceId(spaceId?: string): Promise<string> {
@@ -211,8 +218,11 @@ export class HttpClient {
       'x-language': this.lang,
       'x-device-type': 'cli',
     };
+    if (this.basicAuth) {
+      headers.Authorization = `Basic ${Buffer.from(this.basicAuth, 'utf8').toString('base64')}`;
+    }
     if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
+      headers['X-Auth-Token'] = this.token;
     }
     return headers;
   }
@@ -220,6 +230,7 @@ export class HttpClient {
   private applyAuthHeaders(): void {
     const headers = this.buildAuthHeaders();
     delete this.client.defaults.headers.common.Authorization;
+    delete this.client.defaults.headers.common['X-Auth-Token'];
     for (const [key, value] of Object.entries(headers)) {
       this.client.defaults.headers.common[key] = value;
     }

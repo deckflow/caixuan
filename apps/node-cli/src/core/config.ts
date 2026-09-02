@@ -83,6 +83,14 @@ export class Config {
     this.data.apiBase = value;
   }
 
+  get basicAuth(): string | undefined {
+    return process.env.CAIXUAN_BASIC_AUTH || this.data.basicAuth;
+  }
+
+  set basicAuth(value: string | undefined) {
+    this.data.basicAuth = value;
+  }
+
   async setToken(value: string): Promise<void> {
     this.data.token = value;
     await this.save();
@@ -100,6 +108,16 @@ export class Config {
 
   async setApiBase(value: string): Promise<void> {
     this.data.apiBase = value;
+    await this.save();
+  }
+
+  async setBasicAuth(value: string): Promise<void> {
+    this.data.basicAuth = value;
+    await this.save();
+  }
+
+  async clearBasicAuth(): Promise<void> {
+    delete this.data.basicAuth;
     await this.save();
   }
 
