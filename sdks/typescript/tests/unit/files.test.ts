@@ -108,6 +108,110 @@ describe('FilesApi.upload', () => {
     expect(mock.history.post).toHaveLength(1);
   });
 
+  it('sorts parts by partNumber before completing multipart upload', async () => {
+    const partSize = DEFAULT_CHUNK_SIZE;
+    const data = new Uint8Array(partSize * 2 + 1);
+    data.fill(3);
+
+    vi.mocked(http.post).mockResolvedValue({
+      data: [
+        {
+          id: 'file-3',
+          key: 'files/shuffled.bin',
+          multipart: true,
+          multipartPartSize: partSize,
+          platform: 'oss',
+          cloudPlatform: 'ali',
+          auth: {
+            url: 'https://oss.example/complete-shuffled',
+            headers: { 'Content-Type': 'application/xml' },
+            Authorization: 'OSS complete-token',
+          },
+          multipartPartAuths: [
+            {
+              partNumber: 3,
+              url: 'https://oss.example/part/3',
+              Authorization: 'OSS part-3',
+            },
+            {
+              partNumber: 1,
+              url: 'https://oss.example/part/1',
+              Authorization: 'OSS part-1',
+            },
+            {
+              partNumber: 2,
+              url: 'https://oss.example/part/2',
+              Authorization: 'OSS part-2',
+            },
+          ],
+        },
+      ],
+    } as never);
+
+    mock.onPut(/https:\/\/oss\.example\/part\/\d+/).reply((config) => {
+      const part = config.url?.match(/part\/(\d+)/)?.[1];
+      return [200, '', { etag: `"etag-${part}"` }];
+    });
+    mock.onPost('https://oss.example/complete-shuffled').reply((config) => {
+      expect(config.data).toBe(
+        [
+          '<CompleteMultipartUpload>',
+          '<Part><PartNumber>1</PartNumber><ETag>etag-1</ETag></Part>',
+          '<Part><PartNumber>2</PartNumber><ETag>etag-2</ETag></Part>',
+          '<Part><PartNumber>3</PartNumber><ETag>etag-3</ETag></Part>',
+          '</CompleteMultipartUpload>',
+        ].join('')
+      );
+      return [200, { key: 'files/shuffled.bin' }];
+    });
+
+    await files.upload(data, { name: 'shuffled.bin' });
+
+    expect(mock.history.put).toHaveLength(3);
+    expect(mock.history.post).toHaveLength(1);
+  });
+
+  it('completes local multipart uploads with part hashes', async () => {
+    const partSize = DEFAULT_CHUNK_SIZE;
+    const data = new Uint8Array(partSize + 1);
+    data.fill(9);
+
+    vi.mocked(http.post).mockResolvedValue({
+      data: [
+        {
+          id: 'file-local',
+          key: 'files/local.bin',
+          multipart: true,
+          multipartPartSize: partSize,
+          platform: 'local',
+          auth: {
+            url: 'https://slave.example/files/upload-id?signed=1',
+            Authorization: 'Bearer complete-token',
+          },
+          multipartPartAuths: [
+            { partNumber: 1, url: 'https://slave.example/files/upload-id/0?signed=1', Authorization: 'Bearer p1' },
+            { partNumber: 2, url: 'https://slave.example/files/upload-id/1?signed=1', Authorization: 'Bearer p2' },
+          ],
+        },
+      ],
+    } as never);
+
+    mock.onPut('https://slave.example/files/upload-id/0?signed=1').reply(200, { hash: 'hash-part-1' });
+    mock.onPut('https://slave.example/files/upload-id/1?signed=1').reply(200, { hash: 'hash-part-2' });
+    mock.onPost('https://slave.example/files/upload-id?signed=1').reply((config) => {
+      expect(JSON.parse(String(config.data))).toEqual({
+        parts: [
+          { partNumber: 1, hash: 'hash-part-1' },
+          { partNumber: 2, hash: 'hash-part-2' },
+        ],
+      });
+      return [200, { id: 'file-local', key: 'files/local.bin' }];
+    });
+
+    const result = await files.upload(data, { name: 'local.bin' });
+    expect(result.id).toBe('file-local');
+  });
+
   it('skips OSS upload when server returns an existing file id', async () => {
     const data = new Uint8Array([9, 9, 9]);
     vi.mocked(http.post).mockResolvedValue({

@@ -22,6 +22,12 @@ type NormalizedUpload = {
   chunkSize: number;
 };
 
+type MultipartPartResult = {
+  partNumber: number;
+  eTag?: string;
+  hash?: string;
+};
+
 export class FilesApi {
   constructor(private readonly http: HttpClient) {}
 
@@ -133,12 +139,18 @@ export class FilesApi {
     authResponse: UploadAuthResponse,
     onProgress?: (percentage: number) => void
   ): Promise<void> {
-    const { auth, multipartPartAuths, multipartPartSize } = authResponse;
+    const { auth, multipartPartAuths, multipartPartSize, platform } = authResponse;
     if (!auth) throw new Error('Missing auth in upload response');
     if (!multipartPartAuths?.length) throw new Error('Multipart upload authorization missing');
 
     const chunkSize = multipartPartSize ?? file.chunkSize;
-    const partCount = multipartPartAuths.length;
+    const useOssParts = platform === 'oss' || (platform !== 'local' && authResponse.cloudPlatform !== 'baidu');
+    const partTasks = multipartPartAuths.map((partAuth, index) => ({
+      partAuth,
+      partNumber: partAuth.partNumber ?? index + 1,
+      progressIndex: index,
+    }));
+    const partCount = partTasks.length;
     const progress: number[] = new Array<number>(partCount).fill(0);
     const updateProgress = () => {
       onProgress?.((0.95 * progress.reduce((a, b) => a + b, 0)) / partCount);
@@ -146,24 +158,38 @@ export class FilesApi {
 
     const limit = pLimit(5);
     const parts = await Promise.all(
-      multipartPartAuths.map((partAuth, index) =>
+      partTasks.map(({ partAuth, partNumber, progressIndex }) =>
         limit(async () => {
-          const start = index * chunkSize;
+          const start = (partNumber - 1) * chunkSize;
           const end = Math.min(start + chunkSize, file.data.byteLength);
-          const chunk = file.data.subarray(start, end);
+          const chunk = file.data.slice(start, end);
           const headers = this.authHeaders(partAuth);
-          const res = await axios.put(partAuth.url, chunk, {
-            headers,
-            maxBodyLength: Infinity,
-            maxContentLength: Infinity,
-          });
-          progress[index] = 1;
+
+          let part: MultipartPartResult;
+          if (useOssParts) {
+            const res = await axios.put(partAuth.url, chunk, {
+              headers,
+              maxBodyLength: Infinity,
+              maxContentLength: Infinity,
+            });
+            part = { partNumber, eTag: this.parseETag(res.headers.etag) };
+          } else {
+            const res = await axios.put<{ hash?: string }>(partAuth.url, this.createPartFormBody(file.name, chunk), {
+              headers,
+              maxBodyLength: Infinity,
+              maxContentLength: Infinity,
+            });
+            part = { partNumber, hash: String(res.data?.hash ?? '') };
+          }
+
+          progress[progressIndex] = 1;
           updateProgress();
-          return { partNumber: index + 1, eTag: this.parseETag(res.headers.etag) };
+          return part;
         })
       )
     );
 
+    parts.sort((a, b) => a.partNumber - b.partNumber);
     const completeBody = this.buildCompleteMultipartBody(authResponse, parts);
     await axios.post(auth.url, completeBody, {
       headers: this.authHeaders(auth),
@@ -172,6 +198,12 @@ export class FilesApi {
     });
 
     onProgress?.(1);
+  }
+
+  private createPartFormBody(name: string, chunk: Uint8Array): FormData {
+    const form = new FormData();
+    form.append('file', new Blob([chunk]), name);
+    return form;
   }
 
   private parseETag(raw: string | undefined): string {
@@ -185,20 +217,32 @@ export class FilesApi {
 
   private buildCompleteMultipartBody(
     authResponse: UploadAuthResponse,
-    parts: Array<{ partNumber: number; eTag: string }>
-  ): string | { parts: Array<{ partNumber: number; eTag: string }> } {
-    const useOssXml =
-      authResponse.cloudPlatform !== 'baidu' &&
-      authResponse.platform !== 'local';
+    parts: MultipartPartResult[]
+  ): string | { parts: Array<{ partNumber: number; eTag?: string; hash?: string }> } {
+    const sortedParts = [...parts].sort((a, b) => a.partNumber - b.partNumber);
 
-    if (!useOssXml) {
-      return { parts };
+    if (authResponse.platform === 'local') {
+      return {
+        parts: sortedParts.map((part) => ({
+          partNumber: part.partNumber,
+          hash: part.hash ?? '',
+        })),
+      };
+    }
+
+    if (authResponse.cloudPlatform === 'baidu') {
+      return {
+        parts: sortedParts.map((part) => ({
+          partNumber: part.partNumber,
+          eTag: part.eTag ?? '',
+        })),
+      };
     }
 
     return [
       '<CompleteMultipartUpload>',
-      ...parts.map(
-        (part) => `<Part><PartNumber>${part.partNumber}</PartNumber><ETag>${part.eTag}</ETag></Part>`
+      ...sortedParts.map(
+        (part) => `<Part><PartNumber>${part.partNumber}</PartNumber><ETag>${part.eTag ?? ''}</ETag></Part>`
       ),
       '</CompleteMultipartUpload>',
     ].join('');

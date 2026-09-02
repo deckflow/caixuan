@@ -1,5 +1,6 @@
 export const DEFAULT_ROOT = 'https://app.caixuan.cc/api';
-export const DEFAULT_CHUNK_SIZE = 10 * 1024 * 1024;
+/** Match os-uploader / server multipartPartSize (5MB). */
+export const DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024;
 
 export type Lang = 'zh' | 'en';
 
