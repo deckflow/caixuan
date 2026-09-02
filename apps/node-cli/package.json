@@ -1,0 +1,39 @@
+{
+  "name": "@caixuan-cc/cli",
+  "version": "0.1.0",
+  "description": "Caixuan CLI - manage spaces, shares, docs and members",
+  "type": "module",
+  "main": "./dist/cli.js",
+  "types": "./dist/cli.d.ts",
+  "bin": {
+    "caixuan": "dist/cli.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@caixuan-cc/sdk": "workspace:*",
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "inquirer": "^9.2.0",
+    "open": "^11.0.0",
+    "ora": "^7.0.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.0",
+    "@types/node": "^20.10.0",
+    "axios-mock-adapter": "^1.22.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
