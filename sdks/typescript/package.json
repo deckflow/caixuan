@@ -2,6 +2,7 @@
   "name": "@caixuan-cc/sdk",
   "version": "0.1.0",
   "description": "Caixuan TypeScript SDK",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

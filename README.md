@@ -82,3 +82,7 @@ pnpm test
 pnpm typecheck
 pnpm build
 ```
+
+## License
+
+[MIT](LICENSE)
