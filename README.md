@@ -2,22 +2,16 @@
 
 [Caixuan](https://app.caixuan.cc) 平台的命令行工具与 TypeScript SDK，用于在终端、脚本或服务端管理空间、分享、文档与成员。
 
-## 项目结构
-
-```
-caixuan-cli/
-├── apps/node-cli/     # @caixuan-cc/cli — 命令行工具
-└── sdks/typescript/   # @caixuan-cc/sdk  — TypeScript SDK
-```
+要求 Node.js >= 18。
 
 ## CLI（命令行工具）
+
+包名：`@caixuan-cc/cli`，安装后可用 `caixuan` 命令。
 
 ### 安装
 
 ```bash
 npm install -g @caixuan-cc/cli
-# 或
-pnpm add -g @caixuan-cc/cli
 ```
 
 ### 快速使用
@@ -30,16 +24,16 @@ caixuan share list --json
 caixuan doc create --file ./deck.pptx
 ```
 
-更多命令说明、认证配置、JSON 输出格式及开发指南，请参阅 **[apps/node-cli/README.md](apps/node-cli/README.md)**。
+更多命令说明、认证配置及 JSON 输出格式，请参阅 **[apps/node-cli/README.md](apps/node-cli/README.md)**。
 
 ## SDK（TypeScript）
+
+包名：`@caixuan-cc/sdk`，用于在 Node.js 程序中调用 Caixuan API。
 
 ### 安装
 
 ```bash
 npm install @caixuan-cc/sdk
-# 或
-pnpm add @caixuan-cc/sdk
 ```
 
 ### 快速使用
@@ -59,21 +53,6 @@ const doc = await client.docs.create({
 ```
 
 完整的 API 文档、初始化选项、错误处理及上传流程，请参阅 **[sdks/typescript/README.md](sdks/typescript/README.md)**。
-
-## 本地开发
-
-```bash
-pnpm install
-pnpm build
-pnpm test
-pnpm typecheck
-```
-
-全局安装 CLI（开发模式）：
-
-```bash
-pnpm install:global
-```
 
 ## License
 
