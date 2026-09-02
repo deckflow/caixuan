@@ -34,5 +34,14 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deckflow/caixuan.git",
+    "directory": "sdks/typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/deckflow/caixuan/issues"
+  },
+  "homepage": "https://github.com/deckflow/caixuan/tree/main/sdks/typescript#readme"
 }
