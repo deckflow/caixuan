@@ -11,6 +11,7 @@ import {
   removeDocFromShareContent,
   type ShareModifyCliOptions,
 } from '../utils/share-payload.js';
+import { buildShareLinkUrl, getShareLinkId } from '../utils/share-link.js';
 
 export function registerShareCommands(program: Command, ctx: Context): void {
   const share = program.command('share').description('Manage shares in the current space');
@@ -51,6 +52,29 @@ export function registerShareCommands(program: Command, ctx: Context): void {
         const includes = options.include?.split(',').map((s) => s.trim()).filter(Boolean);
         const detail = await client.shares.get(shareId, includes);
         ctx.output(detail);
+      } catch (error) {
+        ctx.error(error);
+      }
+    });
+
+  share
+    .command('get-link <share-id>')
+    .description('Get the public share link URL')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ caixuan share get-link share123
+  $ caixuan share get-link share123 --json`
+    )
+    .action(async (shareId: string) => {
+      try {
+        ctx.requireAuth();
+        const client = await ctx.getClient();
+        const detail = await client.shares.get(shareId);
+        const linkId = getShareLinkId(detail);
+        const url = buildShareLinkUrl(ctx.config.apiBase, linkId);
+        ctx.output({ shareId, linkId, url }, () => url);
       } catch (error) {
         ctx.error(error);
       }
