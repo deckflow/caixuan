@@ -1,18 +1,17 @@
 # Caixuan CLI
 
+> **English** · [中文](README.zh-CN.md) · [Français](README.fr.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
+
 Command-line tool for the [Caixuan](https://app.caixuan.cc) platform. Manage spaces, shares, documents, and space members from the terminal or in automation scripts.
 
 ## Requirements
 
 - Node.js >= 18
-- pnpm >= 9
 
-## Install (development)
+## Installation
 
 ```bash
-pnpm install
-pnpm build
-pnpm install:global
+npm install -g @caixuan-cc/cli
 ```
 
 ## Authentication
@@ -67,22 +66,6 @@ Pass `--json` on any command for structured output:
 }
 ```
 
-## Project structure
-
-```
-caixuan-cli/
-├── apps/node-cli/     # `caixuan` CLI binary
-└── sdks/typescript/   # @caixuan/sdk
-```
-
-## Development
-
-```bash
-pnpm test
-pnpm typecheck
-pnpm build
-```
-
 ## License
 
-[MIT](LICENSE)
+[MIT](../../LICENSE)

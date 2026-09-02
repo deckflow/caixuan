@@ -1,20 +1,22 @@
 # Caixuan CLI & SDK
 
-[Caixuan](https://app.caixuan.cc) 平台的命令行工具与 TypeScript SDK，用于在终端、脚本或服务端管理空间、分享、文档与成员。
+> **English** · [中文](README.zh-CN.md) · [Français](README.fr.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-要求 Node.js >= 18。
+Command-line tool and TypeScript SDK for the [Caixuan](https://app.caixuan.cc) platform. Use them from the terminal, scripts, or server-side to manage spaces, shares, documents, and members.
 
-## CLI（命令行工具）
+Requires Node.js >= 18.
 
-包名：`@caixuan-cc/cli`，安装后可用 `caixuan` 命令。
+## CLI
 
-### 安装
+Package: `@caixuan-cc/cli`. After installation, the `caixuan` command is available.
+
+### Installation
 
 ```bash
 npm install -g @caixuan-cc/cli
 ```
 
-### 快速使用
+### Quick start
 
 ```bash
 caixuan login
@@ -24,19 +26,19 @@ caixuan share list --json
 caixuan doc create --file ./deck.pptx
 ```
 
-更多命令说明、认证配置及 JSON 输出格式，请参阅 **[apps/node-cli/README.md](apps/node-cli/README.md)**。
+For more commands, authentication setup, and JSON output formats, see **[apps/node-cli/README.md](apps/node-cli/README.md)**.
 
-## SDK（TypeScript）
+## SDK (TypeScript)
 
-包名：`@caixuan-cc/sdk`，用于在 Node.js 程序中调用 Caixuan API。
+Package: `@caixuan-cc/sdk`. Call the Caixuan API from Node.js applications.
 
-### 安装
+### Installation
 
 ```bash
 npm install @caixuan-cc/sdk
 ```
 
-### 快速使用
+### Quick start
 
 ```typescript
 import { createCaixuan } from '@caixuan-cc/sdk';
@@ -52,7 +54,7 @@ const doc = await client.docs.create({
 });
 ```
 
-完整的 API 文档、初始化选项、错误处理及上传流程，请参阅 **[sdks/typescript/README.md](sdks/typescript/README.md)**。
+For full API reference, initialization options, error handling, and upload workflows, see **[sdks/typescript/README.md](sdks/typescript/README.md)**.
 
 ## License
 

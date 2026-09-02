@@ -1,18 +1,18 @@
 # @caixuan-cc/sdk
 
-> **English** · [中文](README.zh-CN.md) · [Français](README.fr.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
+> [English](README.md) · **中文** · [Français](README.fr.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-TypeScript SDK for the [Caixuan](https://app.caixuan.cc) platform. Integrate with the Caixuan API from Node.js services, scripts, or automation workflows.
+[Caixuan](https://app.caixuan.cc) 平台的 TypeScript SDK，用于在 Node.js 服务、脚本或自动化流程中对接 Caixuan API。
 
-## Installation
+## 安装
 
 ```bash
 npm install @caixuan-cc/sdk
 ```
 
-Requires Node.js >= 18.
+要求 Node.js >= 18。
 
-## Quick start
+## 快速开始
 
 ```typescript
 import { createCaixuan } from '@caixuan-cc/sdk';
@@ -22,13 +22,13 @@ const client = createCaixuan({
   spaceId: process.env.CAIXUAN_SPACE_ID,
 });
 
-// Get current session
+// 获取当前会话
 const session = await client.session.get();
 
-// List spaces
+// 列出空间
 const { rows: spaces } = await client.spaces.list();
 
-// Upload a file and create a document
+// 上传文件并创建文档
 const file = await client.files.upload('./deck.pptx');
 const doc = await client.docs.create({
   spaceId: spaces[0].id,
@@ -37,28 +37,28 @@ const doc = await client.docs.create({
 });
 ```
 
-## Initialize the client
+## 初始化客户端
 
-Create a client instance with `createCaixuan()`:
+通过 `createCaixuan()` 创建客户端实例：
 
 ```typescript
 import { createCaixuan, DEFAULT_ROOT } from '@caixuan-cc/sdk';
 
 const client = createCaixuan({
-  root: DEFAULT_ROOT,           // API root URL, default https://app.caixuan.cc/api
-  token: 'your-auth-token',     // User token (X-Auth-Token header)
-  spaceId: 'space-id',          // Current space ID (optional; resolved automatically if omitted)
-  userId: 'user-id',            // User ID (optional)
-  lang: 'en',                   // Language: 'zh' | 'en'
-  basicAuth: 'user:pass',       // nginx Basic Auth (optional)
-  onUnauthorized: async () => { // Refresh token on expiry (optional)
+  root: DEFAULT_ROOT,           // API 根地址，默认 https://app.caixuan.cc/api
+  token: 'your-auth-token',     // 用户 Token（X-Auth-Token 请求头）
+  spaceId: 'space-id',          // 当前操作的空间 ID（可选，未设置时会自动解析）
+  userId: 'user-id',            // 用户 ID（可选）
+  lang: 'zh',                   // 语言，'zh' | 'en'
+  basicAuth: 'user:pass',       // nginx Basic Auth（可选）
+  onUnauthorized: async () => { // Token 过期时自动刷新（可选）
     const newToken = await refreshToken();
     return { token: newToken };
   },
 });
 ```
 
-You can also update credentials after the client is created:
+客户端创建后，也可动态更新认证信息：
 
 ```typescript
 client.setToken('new-token');
@@ -67,30 +67,30 @@ client.setUserId('user-id');
 client.setBasicAuth('user:pass');
 ```
 
-### Obtaining a token
+### 获取 Token
 
-- Complete OAuth login in the Caixuan web app
-- Or use the CLI: run `caixuan login`, then `caixuan config show`
+- 在 Caixuan Web 端完成 OAuth 登录后获取
+- 或使用 CLI：`caixuan login` 后通过 `caixuan config show` 查看
 
-### Space ID resolution
+### 空间 ID 解析
 
-Most APIs require a `spaceId`. If none is provided at initialization, the SDK resolves it in this order:
+多数 API 需要 `spaceId`。若初始化时未传入，SDK 会按以下顺序自动解析：
 
-1. Explicitly set `spaceId`
-2. `defaultSpace.id` from `/session`
+1. 已显式设置的 `spaceId`
+2. 调用 `/session` 获取 `defaultSpace.id`
 
-## API modules
+## API 模块
 
-Access resource APIs through namespaces on the client:
+客户端通过命名空间访问各资源 API：
 
-| Module | Description |
-|--------|-------------|
-| `client.session` | Session (current user, logout) |
-| `client.spaces` | Space list, details, switch |
-| `client.shares` | Share link CRUD |
-| `client.docs` | Document CRUD |
-| `client.members` | Space member management |
-| `client.files` | File upload |
+| 模块 | 说明 |
+|------|------|
+| `client.session` | 会话（当前用户、登出） |
+| `client.spaces` | 空间列表、详情、切换 |
+| `client.shares` | 分享链接 CRUD |
+| `client.docs` | 文档 CRUD |
+| `client.members` | 空间成员管理 |
+| `client.files` | 文件上传 |
 
 ### Session
 
@@ -105,9 +105,9 @@ await client.session.logout();
 
 ```typescript
 const { rows, count } = await client.spaces.list();
-const space = await client.spaces.get();           // Current space
-const current = await client.spaces.current();     // From session
-await client.spaces.select('space-id');            // Switch and set as default
+const space = await client.spaces.get();           // 当前空间
+const current = await client.spaces.current();     // 从 session 读取
+await client.spaces.select('space-id');            // 切换并设为默认
 ```
 
 ### Shares
@@ -118,13 +118,13 @@ const share = await client.shares.get('share-id', ['content']);
 
 const created = await client.shares.create({
   spaceId: 'space-id',
-  name: 'My share',
-  description: 'Optional description',
+  name: '我的分享',
+  description: '可选描述',
   content: [{ _type: 'doc', id: 'doc-id' }],
   needPhone: 'no',
 });
 
-await client.shares.update({ id: 'share-id', name: 'New name', password: '1234' });
+await client.shares.update({ id: 'share-id', name: '新名称', password: '1234' });
 await client.shares.delete('share-id');
 ```
 
@@ -156,27 +156,27 @@ await client.members.add({
   spaceId: 'space-id',
   role: 'teammate',   // 'manager' | 'teammate' | 'guest'
   email: 'user@example.com',
-  name: 'Jane Doe',
+  name: '张三',
 });
 
 await client.members.updateRole(undefined, 'user-id', 'manager');
-await client.members.rename(undefined, 'user-id', 'New name');
+await client.members.rename(undefined, 'user-id', '新名字');
 await client.members.remove(undefined, 'user-id');
 ```
 
-### Files (upload)
+### Files（上传）
 
-Supports local file paths or binary data, with automatic single-file and multipart upload:
+支持本地文件路径或二进制数据，自动处理单文件与分片上传：
 
 ```typescript
-// Upload a local file
+// 上传本地文件
 const result = await client.files.upload('./presentation.pptx', {
   spaceId: 'space-id',
   onProgress: (pct) => console.log(`${Math.round(pct * 100)}%`),
 });
 // result: { id, name, bytes, hash }
 
-// Upload binary data (name required)
+// 上传二进制数据（需指定 name）
 const buffer = new Uint8Array(await fetch(url).then(r => r.arrayBuffer()));
 const result2 = await client.files.upload(buffer, {
   spaceId: 'space-id',
@@ -184,11 +184,11 @@ const result2 = await client.files.upload(buffer, {
 });
 ```
 
-Typical workflow: call `files.upload()` to get `fileId`, then `docs.create()` to create the document.
+典型工作流：先 `files.upload()` 获取 `fileId`，再 `docs.create()` 创建文档。
 
-## Pagination
+## 分页
 
-List endpoints return `ListResult<T>`:
+列表接口返回 `ListResult<T>`：
 
 ```typescript
 interface ListResult<T> {
@@ -197,15 +197,15 @@ interface ListResult<T> {
 }
 ```
 
-Pagination parameters:
+分页参数：
 
 ```typescript
 await client.shares.list(undefined, { _startIndex: 0, _maxResults: 50 });
 ```
 
-## Error handling
+## 错误处理
 
-The SDK wraps API errors as `APIError`:
+SDK 将 API 错误封装为 `APIError`：
 
 ```typescript
 import { APIError, isRetriableError } from '@caixuan-cc/sdk';
@@ -214,24 +214,24 @@ try {
   await client.docs.get('invalid-id');
 } catch (err) {
   if (err instanceof APIError) {
-    console.error(err.statusCode);    // HTTP status code
-    console.error(err.code);          // Business error code
-    console.error(err.requestId);     // Request trace ID
-    console.error(err.requestUrl);    // Request URL
-    console.error(err.requestPayload);// Request body
+    console.error(err.statusCode);    // HTTP 状态码
+    console.error(err.code);          // 业务错误码
+    console.error(err.requestId);     // 请求追踪 ID
+    console.error(err.requestUrl);    // 请求 URL
+    console.error(err.requestPayload);// 请求体
   }
 
   if (isRetriableError(err)) {
-    // Network errors or 502/604 — safe to retry
+    // 网络错误或 502/604，可重试
   }
 }
 ```
 
-The SDK automatically retries retriable errors (network timeouts, 502, 604) with exponential backoff.
+SDK 内置对网络超时、502、604 等可重试错误的自动重试（指数退避）。
 
-On 401 Unauthorized, if `onUnauthorized` is configured, the SDK refreshes the token and retries the request.
+401 未授权时，若配置了 `onUnauthorized` 回调，SDK 会自动刷新 Token 并重试请求。
 
-## Type exports
+## 类型导出
 
 ```typescript
 import type {
@@ -248,6 +248,6 @@ import type {
 } from '@caixuan-cc/sdk';
 ```
 
-## License
+## 许可证
 
 [MIT](../../LICENSE)
