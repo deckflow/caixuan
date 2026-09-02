@@ -1,8 +1,9 @@
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import chalk from 'chalk';
 import { Context } from '../context.js';
 import { outputListResult, SHARE_COLUMNS } from '../utils/list-format.js';
-import { collect, parsePositiveInteger, readJsonBody } from '../utils/parse.js';
+import { collect, collectIntegers, parsePositiveInteger, readJsonBody } from '../utils/parse.js';
+import { buildShareModifyPayload, hasShareModifyFields, type ShareModifyCliOptions } from '../utils/share-payload.js';
 
 export function registerShareCommands(program: Command, ctx: Context): void {
   const share = program.command('share').description('Manage shares in the current space');
@@ -109,20 +110,56 @@ Examples:
     .description('Update a share')
     .option('--name <name>', 'Share name')
     .option('--description <text>', 'Share description')
+    .option('--is-secrecy <yes|no>', 'Whether the share is secret')
+    .option('--notice-user-id <id>', 'User ID to notify (repeatable)', collect, [] as string[])
+    .option('--consumer-tag <n>', 'Consumer tag ID (repeatable)', collectIntegers, [] as number[])
+    .option('--need-phone <yes|no>', 'Require phone number')
+    .option('--single-link-view-limit <n>', 'Max viewers per link (0 = unlimited)')
+    .option('--password <password>', 'Share password (max 4 chars)')
+    .addOption(
+      new Option('--download <mode>', 'Download permission').choices(['notAllowed', 'pdf', 'pptx', 'pdfPptx'])
+    )
+    .option('--allow-viewer-share <yes|no>', 'Allow viewers to share')
+    .option('--allow-search-engine-index <yes|no>', 'Allow search engine indexing')
+    .addOption(new Option('--watermark <mode>', 'Watermark mode').choices(['none', 'user', 'viewer', 'both']))
+    .option('--file-watermark <text>', 'File watermark text')
+    .option('--watermark-color <color>', 'Watermark text color')
+    .option('--expired-at <iso|null>', 'Expiration time (ISO 8601) or "null" to clear')
+    .option('--allow-leave-contact <yes|no>', 'Allow viewers to leave contact info')
+    .addOption(
+      new Option('--contact-type <type>', 'Contact collection type').choices(['none', 'mobile', 'email', 'wechat'])
+    )
+    .addOption(
+      new Option('--view-control <mode>', 'View control mode').choices([
+        'none',
+        'contact',
+        'buy',
+        'password',
+        'consumer',
+      ])
+    )
+    .option('--price <cents>', 'Price in smallest currency unit')
+    .option('--paid-interval <json>', 'Paid access interval JSON, e.g. {"unit":"month","value":1}, or "null"')
+    .option('--public-buyer-and-message <yes|no>', 'Show buyers and featured messages publicly')
+    .option('--content <json>', 'Full content array JSON')
+    .option('--doc <doc-id>', 'Attach a document to the share (repeatable)', collect, [] as string[])
+    .option('--overseas-cdn <yes|no>', 'Enable overseas CDN acceleration')
     .option('--body <json>', 'Full JSON body or @file.json')
-    .addHelpText('after', '\nExample:\n  $ caixuan share update share123 --name "New name"')
-    .action(async (shareId: string, options: { name?: string; description?: string; body?: string }) => {
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ caixuan share update share123 --name "New name"
+  $ caixuan share update share123 --view-control password --password 1234
+  $ caixuan share update share123 --body @share.json`
+    )
+    .action(async (shareId: string, options: ShareModifyCliOptions & { body?: string }) => {
       try {
         ctx.requireAuth();
         const client = await ctx.getClient();
-        const payload = options.body
-          ? await readJsonBody(options.body)
-          : {
-              ...(options.name ? { name: options.name } : {}),
-              ...(options.description ? { description: options.description } : {}),
-            };
+        const payload = options.body ? await readJsonBody(options.body) : buildShareModifyPayload(options);
 
-        if (!options.body && !options.name && !options.description) {
+        if (!options.body && !hasShareModifyFields(payload)) {
           ctx.error('Provide at least one field or --body', 'INVALID_ARGS');
         }
 

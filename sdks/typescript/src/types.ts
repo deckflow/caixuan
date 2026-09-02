@@ -80,10 +80,27 @@ export interface UpdateShareParams {
   id: string;
   name?: string;
   description?: string;
+  isSecrecy?: boolean;
+  noticeUserIds?: string[];
+  consumerTags?: number[];
   content?: ShareContentItem[];
   needPhone?: 'yes' | 'no';
-  viewControl?: string;
+  singleLinkViewLimit?: number;
   password?: string;
+  download?: 'notAllowed' | 'pdf' | 'pptx' | 'pdfPptx';
+  allowViewerShare?: 'yes' | 'no';
+  allowSearchEngineIndex?: 'yes' | 'no';
+  watermark?: 'none' | 'user' | 'viewer' | 'both';
+  fileWatermark?: string;
+  watermarkColor?: string;
+  expiredAt?: string | null;
+  allowLeaveContact?: 'yes' | 'no';
+  contactType?: 'none' | 'mobile' | 'email' | 'wechat';
+  viewControl?: string;
+  price?: number;
+  paidInterval?: { unit: 'day' | 'week' | 'month' | 'year'; value: number } | null;
+  publicBuyerAndMessage?: 'yes' | 'no';
+  overseasCDN?: 'yes' | 'no';
   [key: string]: unknown;
 }
 

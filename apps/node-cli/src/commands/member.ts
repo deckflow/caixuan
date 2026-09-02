@@ -2,7 +2,7 @@ import { Command, Option } from 'commander';
 import chalk from 'chalk';
 import { Context } from '../context.js';
 import { MEMBER_COLUMNS, outputListResult } from '../utils/list-format.js';
-import { parsePositiveInteger } from '../utils/parse.js';
+import { parsePositiveInteger, readJsonBody } from '../utils/parse.js';
 
 export function registerMemberCommands(program: Command, ctx: Context): void {
   const member = program.command('member').description('Manage members in the current space');
@@ -96,22 +96,35 @@ Examples:
   member
     .command('update <user-id>')
     .description('Update a space member')
-    .option('--role <role>', 'New role', (v) => v)
+    .addOption(new Option('--role <role>', 'New role').choices(['manager', 'teammate', 'guest']))
     .option('--name <name>', 'New display name in the space')
-    .addHelpText('after', '\nExample:\n  $ caixuan member update user123 --role manager')
-    .action(async (userId: string, options: { role?: string; name?: string }) => {
+    .option('--body <json>', 'Full JSON body or @file.json')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ caixuan member update user123 --role manager
+  $ caixuan member update user123 --name "Alice"
+  $ caixuan member update user123 --body '{"role":"teammate","name":"Bob"}'`
+    )
+    .action(async (userId: string, options: { role?: string; name?: string; body?: string }) => {
       try {
         ctx.requireAuth();
-        if (!options.role && !options.name) {
-          ctx.error('Provide --role and/or --name', 'INVALID_ARGS');
+        const body = options.body ? await readJsonBody(options.body) : {};
+        const role = (body.role ?? options.role) as string | undefined;
+        const name = (body.name ?? options.name) as string | undefined;
+
+        if (!role && !name) {
+          ctx.error('Provide --role, --name, or --body with at least one field', 'INVALID_ARGS');
         }
+
         const client = await ctx.getClient();
         let result: unknown;
-        if (options.role) {
-          result = await client.members.updateRole(undefined, userId, options.role);
+        if (role) {
+          result = await client.members.updateRole(undefined, userId, role);
         }
-        if (options.name) {
-          result = await client.members.rename(undefined, userId, options.name);
+        if (name) {
+          result = await client.members.rename(undefined, userId, name);
         }
         ctx.output(result, () => chalk.green('✓ Member updated'));
       } catch (error) {

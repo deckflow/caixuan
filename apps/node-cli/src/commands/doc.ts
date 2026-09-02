@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { Context } from '../context.js';
 import { DOC_COLUMNS, outputListResult } from '../utils/list-format.js';
-import { parsePositiveInteger } from '../utils/parse.js';
+import { parsePositiveInteger, readJsonBody } from '../utils/parse.js';
 
 export function registerDocCommands(program: Command, ctx: Context): void {
   const doc = program.command('doc').description('Manage documents in the current space');
@@ -99,12 +99,29 @@ Example:
   doc
     .command('update <doc-id>')
     .description('Update a document (currently supports rename)')
-    .requiredOption('--name <name>', 'New document name')
-    .action(async (docId: string, options: { name: string }) => {
+    .option('--name <name>', 'New document name')
+    .option('--body <json>', 'Full JSON body or @file.json')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ caixuan doc update doc123 --name "New title"
+  $ caixuan doc update doc123 --body '{"name":"New title"}'`
+    )
+    .action(async (docId: string, options: { name?: string; body?: string }) => {
       try {
         ctx.requireAuth();
+        const payload = options.body
+          ? await readJsonBody(options.body)
+          : { ...(options.name ? { name: options.name } : {}) };
+
+        const name = payload.name;
+        if (typeof name !== 'string' || !name) {
+          ctx.error('Provide --name or --body with a "name" field', 'INVALID_ARGS');
+        }
+
         const client = await ctx.getClient();
-        const updated = await client.docs.rename(docId, options.name);
+        const updated = await client.docs.rename(docId, name);
         ctx.output(updated, () => chalk.green('✓ Document updated'));
       } catch (error) {
         ctx.error(error);
