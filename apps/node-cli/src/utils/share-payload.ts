@@ -1,5 +1,9 @@
 import { parseBoolean, parseInteger, parseNullableJson } from './parse.js';
 
+export type ShareContentItem =
+  | { _type: 'doc'; id: string; trial?: { type: 'percent' | 'count'; value: number } }
+  | { _type: 'divider'; name: string };
+
 export type ShareModifyCliOptions = {
   name?: string;
   description?: string;
@@ -74,4 +78,23 @@ export function buildShareModifyPayload(options: ShareModifyCliOptions): Record<
 
 export function hasShareModifyFields(payload: Record<string, unknown>): boolean {
   return Object.keys(payload).length > 0;
+}
+
+export function getShareContent(detail: unknown): ShareContentItem[] {
+  const content = (detail as { content?: ShareContentItem[] }).content;
+  return Array.isArray(content) ? [...content] : [];
+}
+
+export function addDocToShareContent(content: ShareContentItem[], docId: string): ShareContentItem[] {
+  if (content.some((item) => item._type === 'doc' && item.id === docId)) {
+    throw new Error(`Document "${docId}" is already in the share`);
+  }
+  return [...content, { _type: 'doc', id: docId }];
+}
+
+export function removeDocFromShareContent(content: ShareContentItem[], docId: string): ShareContentItem[] {
+  if (!content.some((item) => item._type === 'doc' && item.id === docId)) {
+    throw new Error(`Document "${docId}" is not in the share`);
+  }
+  return content.filter((item) => !(item._type === 'doc' && item.id === docId));
 }

@@ -3,7 +3,14 @@ import chalk from 'chalk';
 import { Context } from '../context.js';
 import { outputListResult, SHARE_COLUMNS } from '../utils/list-format.js';
 import { collect, collectIntegers, parsePositiveInteger, readJsonBody } from '../utils/parse.js';
-import { buildShareModifyPayload, hasShareModifyFields, type ShareModifyCliOptions } from '../utils/share-payload.js';
+import {
+  addDocToShareContent,
+  buildShareModifyPayload,
+  getShareContent,
+  hasShareModifyFields,
+  removeDocFromShareContent,
+  type ShareModifyCliOptions,
+} from '../utils/share-payload.js';
 
 export function registerShareCommands(program: Command, ctx: Context): void {
   const share = program.command('share').description('Manage shares in the current space');
@@ -165,6 +172,50 @@ Examples:
 
         const updated = await client.shares.update({ id: shareId, ...payload });
         ctx.output(updated, () => chalk.green('✓ Share updated'));
+      } catch (error) {
+        ctx.error(error);
+      }
+    });
+
+  share
+    .command('add-doc <share-id> <doc-id>')
+    .description('Add a document to a share')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ caixuan share add-doc share123 doc456`
+    )
+    .action(async (shareId: string, docId: string) => {
+      try {
+        ctx.requireAuth();
+        const client = await ctx.getClient();
+        const detail = await client.shares.get(shareId);
+        const content = addDocToShareContent(getShareContent(detail), docId);
+        const updated = await client.shares.update({ id: shareId, content });
+        ctx.output(updated, () => chalk.green(`✓ Document ${docId} added to share`));
+      } catch (error) {
+        ctx.error(error);
+      }
+    });
+
+  share
+    .command('remove-doc <share-id> <doc-id>')
+    .description('Remove a document from a share')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ caixuan share remove-doc share123 doc456`
+    )
+    .action(async (shareId: string, docId: string) => {
+      try {
+        ctx.requireAuth();
+        const client = await ctx.getClient();
+        const detail = await client.shares.get(shareId);
+        const content = removeDocFromShareContent(getShareContent(detail), docId);
+        const updated = await client.shares.update({ id: shareId, content });
+        ctx.output(updated, () => chalk.green(`✓ Document ${docId} removed from share`));
       } catch (error) {
         ctx.error(error);
       }
