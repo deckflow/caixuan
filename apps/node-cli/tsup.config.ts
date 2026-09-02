@@ -6,9 +6,10 @@ export default defineConfig({
   dts: true,
   clean: true,
   minify: false,
-  shims: true,
   splitting: false,
   bundle: true,
+  // Keep npm deps external so CJS packages (axios → form-data) load via Node at runtime.
+  skipNodeModulesBundle: true,
   outDir: 'dist',
   target: 'node18',
   platform: 'node',
