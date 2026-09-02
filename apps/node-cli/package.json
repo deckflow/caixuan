@@ -8,7 +8,9 @@
   "bin": {
     "caixuan": "dist/cli.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -23,6 +25,7 @@
     "inquirer": "^9.2.0",
     "open": "^11.0.0",
     "ora": "^7.0.0",
+    "string-width": "^7.2.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {

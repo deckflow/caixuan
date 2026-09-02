@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { Context } from '../context.js';
+import { DOC_COLUMNS, outputListResult } from '../utils/list-format.js';
 import { parsePositiveInteger } from '../utils/parse.js';
 
 export function registerDocCommands(program: Command, ctx: Context): void {
@@ -13,8 +14,9 @@ export function registerDocCommands(program: Command, ctx: Context): void {
     .option('--limit <n>', 'Max results', '20')
     .option('--tag <tag>', 'Filter by tag')
     .option('--name <name>', 'Filter by name')
-    .addHelpText('after', '\nExample:\n  $ caixuan doc list --json')
-    .action(async (options: { start: string; limit: string; tag?: string; name?: string }) => {
+    .option('--table', 'Output as a table')
+    .addHelpText('after', '\nExamples:\n  $ caixuan doc list\n  $ caixuan doc list --table\n  $ caixuan doc list --json')
+    .action(async (options: { start: string; limit: string; tag?: string; name?: string; table?: boolean }) => {
       try {
         ctx.requireAuth();
         const client = await ctx.getClient();
@@ -24,7 +26,11 @@ export function registerDocCommands(program: Command, ctx: Context): void {
           tag: options.tag,
           name: options.name,
         });
-        ctx.output(result, undefined, { count: result.count });
+        outputListResult(ctx, result, DOC_COLUMNS, {
+          table: options.table,
+          emptyMessage: 'No documents found.',
+          start: parsePositiveInteger(options.start, '--start'),
+        });
       } catch (error) {
         ctx.error(error);
       }

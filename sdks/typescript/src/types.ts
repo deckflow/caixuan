@@ -128,7 +128,9 @@ export interface UploadAuthResponse {
   multipart?: boolean;
   multipartPartAuths?: PartAuth[];
   multipartPartSize?: number;
-  platform?: 'oss' | 's3' | string;
+  multipartUploadId?: string;
+  platform?: 'oss' | 'local' | 's3' | string;
+  cloudPlatform?: 'baidu' | 'ali';
 }
 
 export type UploadInput = string | Uint8Array | ArrayBuffer;

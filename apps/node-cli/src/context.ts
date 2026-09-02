@@ -1,5 +1,5 @@
 import ora from 'ora';
-import { APIError, createCaixuan, type CaixuanClient } from '@caixuan/sdk';
+import { APIError, createCaixuan, type CaixuanClient } from '@caixuan-cc/sdk';
 import { Config } from './core/config.js';
 import { runLoginFlow } from './core/auth.js';
 import { ExitCode, outputError } from './utils/errors.js';
@@ -13,12 +13,14 @@ type SpinnerLike = {
 export class Context {
   public config: Config;
   public jsonOutput: boolean;
+  public debugOutput: boolean;
   private _client?: CaixuanClient;
   private _loginPromise?: Promise<string>;
 
   constructor() {
     this.config = new Config();
     this.jsonOutput = false;
+    this.debugOutput = false;
   }
 
   async init(): Promise<void> {
@@ -108,20 +110,26 @@ export class Context {
       const payload: Record<string, unknown> = { ok: false, error: this.formatJsonError(error, code) };
       console.error(JSON.stringify(payload, null, 2));
     } else {
-      outputError(error instanceof Error ? error : new Error(String(error)), false);
+      outputError(error instanceof Error ? error : new Error(String(error)), false, this.debugOutput);
     }
     process.exit(exitCode);
   }
 
   private formatJsonError(error: unknown, code?: string): Record<string, unknown> {
     if (error instanceof APIError) {
-      return {
+      const payload: Record<string, unknown> = {
         code: code ?? error.code ?? error.name,
         message: error.message,
         requestId: error.requestId,
         statusCode: error.statusCode,
         body: error.responseData,
       };
+      if (this.debugOutput) {
+        if (error.requestMethod) payload.verb = error.requestMethod;
+        if (error.requestUrl) payload.url = error.requestUrl;
+        if (error.requestPayload !== undefined) payload.payload = error.requestPayload;
+      }
+      return payload;
     }
     if (error instanceof Error) {
       return { code: code ?? error.name, message: error.message };

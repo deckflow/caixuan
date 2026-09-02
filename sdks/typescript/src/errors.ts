@@ -83,13 +83,48 @@ export function isRetriableAxiosError(error: AxiosError): boolean {
   return isRetriableHTTPStatus(error.response.status);
 }
 
+function extractRequestContext(error: AxiosError): {
+  requestMethod?: string;
+  requestUrl?: string;
+  requestPayload?: unknown;
+} {
+  const config = error.config;
+  if (!config) return {};
+
+  const method = config.method?.toUpperCase();
+  const url = config.url;
+  let payload: unknown;
+
+  if (config.data !== undefined && config.data !== '') {
+    if (typeof config.data === 'string') {
+      try {
+        payload = JSON.parse(config.data);
+      } catch {
+        payload = config.data;
+      }
+    } else {
+      payload = config.data;
+    }
+  }
+
+  if (config.params && typeof config.params === 'object' && Object.keys(config.params).length > 0) {
+    payload =
+      payload !== undefined ? { body: payload, params: config.params } : { params: config.params };
+  }
+
+  return { requestMethod: method, requestUrl: url, requestPayload: payload };
+}
+
 export class APIError extends Error {
   constructor(
     message: string,
     public statusCode?: number,
     public responseData?: unknown,
     public readonly requestId?: string,
-    public readonly code?: string | number
+    public readonly code?: string | number,
+    public readonly requestMethod?: string,
+    public readonly requestUrl?: string,
+    public readonly requestPayload?: unknown
   ) {
     super(message);
     this.name = 'APIError';
@@ -107,18 +142,33 @@ export class APIError extends Error {
         : undefined;
     const base = `API Error (${status ?? 'unknown'}): ${errorMessage}`;
     const message = requestId ? `${base} [X-RequestId: ${requestId}]` : base;
-    return new APIError(message, status, data, requestId, code);
+    const { requestMethod, requestUrl, requestPayload } = extractRequestContext(error);
+    return new APIError(
+      message,
+      status,
+      data,
+      requestId,
+      code,
+      requestMethod,
+      requestUrl,
+      requestPayload
+    );
   }
 
   static unauthorized(error: AxiosError): APIError {
     const requestId =
       extractRequestIdFromHeaders(error.response?.headers) ?? extractRequestIdFromBody(error.response?.data);
     const message = 'Authentication expired. Please log in again.';
+    const { requestMethod, requestUrl, requestPayload } = extractRequestContext(error);
     return new APIError(
       requestId ? `${message} [X-RequestId: ${requestId}]` : message,
       401,
       error.response?.data,
-      requestId
+      requestId,
+      undefined,
+      requestMethod,
+      requestUrl,
+      requestPayload
     );
   }
 }

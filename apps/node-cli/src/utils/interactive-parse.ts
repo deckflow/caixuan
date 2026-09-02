@@ -17,7 +17,7 @@ const REPAIRABLE = new Set<string>([
 
 const DEV_TTY = '/dev/tty';
 
-function isInteractiveCapable(argv: string[]): boolean {
+export function isInteractiveCapable(argv: string[]): boolean {
   if (argv.includes('--json')) {
     return false;
   }
@@ -90,6 +90,10 @@ function findOptionForSpec(cmd: Command, flagSpec: string): Option | undefined {
   return cmd.options.find(
     (o) => o.long === head || o.short === head || o.flags.startsWith(head)
   );
+}
+
+export function runPrompt(questions: Parameters<typeof inquirer.prompt>[0]): ReturnType<typeof inquirer.prompt> {
+  return prompt(questions);
 }
 
 let promptFn: ((questions: any) => Promise<any>) | undefined;

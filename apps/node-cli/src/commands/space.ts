@@ -1,15 +1,34 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { Context } from '../context.js';
+import { isInteractiveCapable } from '../utils/interactive-parse.js';
+import { outputSpaceList } from '../utils/list-format.js';
+import { promptSelectSpace } from '../utils/space-select.js';
 
-function formatSpaceList(rows: Array<Record<string, unknown>>): string {
-  if (rows.length === 0) return 'No spaces found.';
-  return rows
-    .map((space) => {
-      const selected = space.selected ? chalk.green(' *') : '';
-      return `${selected} ${chalk.cyan(String(space.id))}  ${space.name ?? ''}  [${space.role ?? ''}]`;
-    })
-    .join('\n');
+async function resolveSpaceId(ctx: Context, spaceId?: string): Promise<string> {
+  if (spaceId) return spaceId;
+
+  if (ctx.jsonOutput) {
+    ctx.error('space-id is required when using --json', 'INVALID_ARGS');
+  }
+  if (!isInteractiveCapable(process.argv)) {
+    ctx.error(
+      'space-id is required in non-interactive mode. Run `caixuan space list` to see available spaces.',
+      'INVALID_ARGS'
+    );
+  }
+
+  const client = await ctx.getClient();
+  const result = await client.spaces.list();
+  return promptSelectSpace(result.rows);
+}
+
+async function applySpaceSelection(ctx: Context, spaceId: string): Promise<void> {
+  const client = await ctx.getClient();
+  await client.spaces.select(spaceId);
+  await ctx.config.setSpaceId(spaceId);
+  client.setSpaceId(spaceId);
+  ctx.output({ spaceId, selected: true }, () => chalk.green(`✓ Selected space ${spaceId}`));
 }
 
 export function registerSpaceCommands(program: Command, ctx: Context): void {
@@ -18,15 +37,17 @@ export function registerSpaceCommands(program: Command, ctx: Context): void {
   space
     .command('list')
     .description('List all spaces the current user has joined')
-    .addHelpText('after', '\nExample:\n  $ caixuan space list --json')
-    .action(async () => {
+    .option('--table', 'Output as a table')
+    .addHelpText(
+      'after',
+      '\nExamples:\n  $ caixuan space list\n  $ caixuan space list --table\n  $ caixuan space list --json'
+    )
+    .action(async (options: { table?: boolean }) => {
       try {
         ctx.requireAuth();
         const client = await ctx.getClient();
         const result = await client.spaces.list();
-        ctx.output(result, (data) => formatSpaceList((data as { rows: Array<Record<string, unknown>> }).rows), {
-          count: result.count,
-        });
+        outputSpaceList(ctx, result, options.table);
       } catch (error) {
         ctx.error(error);
       }
@@ -41,7 +62,7 @@ export function registerSpaceCommands(program: Command, ctx: Context): void {
         const client = await ctx.getClient();
         const current = await client.spaces.current();
         if (!current) {
-          ctx.error('No current space. Run `caixuan space select <space-id>`.', 'INVALID_ARGS');
+          ctx.error('No current space. Run `caixuan space select`.', 'INVALID_ARGS');
         }
         ctx.output(current, (data) => {
           const s = data as Record<string, unknown>;
@@ -58,17 +79,20 @@ export function registerSpaceCommands(program: Command, ctx: Context): void {
     });
 
   space
-    .command('select <space-id>')
+    .command('select [space-id]')
     .description('Switch the current space and persist the selection')
-    .addHelpText('after', '\nExample:\n  $ caixuan space select team12345')
-    .action(async (spaceId: string) => {
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ caixuan space select team12345
+  $ caixuan space select`
+    )
+    .action(async (spaceId?: string) => {
       try {
         ctx.requireAuth();
-        const client = await ctx.getClient();
-        await client.spaces.select(spaceId);
-        await ctx.config.setSpaceId(spaceId);
-        client.setSpaceId(spaceId);
-        ctx.output({ spaceId, selected: true }, () => chalk.green(`✓ Selected space ${spaceId}`));
+        const selectedId = await resolveSpaceId(ctx, spaceId);
+        await applySpaceSelection(ctx, selectedId);
       } catch (error) {
         ctx.error(error);
       }

@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { Context } from '../context.js';
+import { outputListResult, SHARE_COLUMNS } from '../utils/list-format.js';
 import { collect, parsePositiveInteger, readJsonBody } from '../utils/parse.js';
 
 export function registerShareCommands(program: Command, ctx: Context): void {
@@ -11,8 +12,9 @@ export function registerShareCommands(program: Command, ctx: Context): void {
     .description('List shares in the current space')
     .option('--start <n>', 'Pagination start index', '0')
     .option('--limit <n>', 'Max results', '20')
-    .addHelpText('after', '\nExample:\n  $ caixuan share list --json')
-    .action(async (options: { start: string; limit: string }) => {
+    .option('--table', 'Output as a table')
+    .addHelpText('after', '\nExamples:\n  $ caixuan share list\n  $ caixuan share list --table\n  $ caixuan share list --json')
+    .action(async (options: { start: string; limit: string; table?: boolean }) => {
       try {
         ctx.requireAuth();
         const client = await ctx.getClient();
@@ -20,7 +22,11 @@ export function registerShareCommands(program: Command, ctx: Context): void {
           _startIndex: parsePositiveInteger(options.start, '--start'),
           _maxResults: parsePositiveInteger(options.limit, '--limit'),
         });
-        ctx.output(result, undefined, { count: result.count });
+        outputListResult(ctx, result, SHARE_COLUMNS, {
+          table: options.table,
+          emptyMessage: 'No shares found.',
+          start: parsePositiveInteger(options.start, '--start'),
+        });
       } catch (error) {
         ctx.error(error);
       }

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { APIError } from '../../src/errors.js';
@@ -58,5 +58,28 @@ describe('@caixuan/sdk', () => {
     expect(err.statusCode).toBe(403);
     expect(err.code).toBe('NOT_ALLOWED');
     expect(err.requestId).toBe('req-1');
+  });
+
+  it('captures request context from axios errors', () => {
+    const axiosError = {
+      isAxiosError: true,
+      message: 'Request failed with status code 404',
+      config: {
+        method: 'post',
+        url: 'https://app.caixuan.cc/api/spaces/abc/docs',
+        data: JSON.stringify({ spaceId: 'abc', fileId: 'file123', name: 'demo.pptx' }),
+      },
+      response: {
+        status: 404,
+        data: { code: 'notFound', message: 'Resource not found' },
+        headers: { 'x-request-id': 'req-debug-1' },
+      },
+    } as AxiosError;
+
+    const err = APIError.fromAxiosError(axiosError);
+    expect(err.requestMethod).toBe('POST');
+    expect(err.requestUrl).toBe('https://app.caixuan.cc/api/spaces/abc/docs');
+    expect(err.requestPayload).toEqual({ spaceId: 'abc', fileId: 'file123', name: 'demo.pptx' });
+    expect(err.requestId).toBe('req-debug-1');
   });
 });

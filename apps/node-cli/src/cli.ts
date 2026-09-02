@@ -22,6 +22,9 @@ async function main() {
   if (process.argv.includes('--json')) {
     ctx.jsonOutput = true;
   }
+  if (process.argv.includes('--debug')) {
+    ctx.debugOutput = true;
+  }
 
   const program = new Command();
 
@@ -30,9 +33,11 @@ async function main() {
     .description('Caixuan CLI — manage spaces, shares, documents and members')
     .version(CLI_VERSION)
     .option('--json', 'Output structured JSON for scripting and AI agents')
+    .option('--debug', 'Print request details when API calls fail')
     .hook('preAction', (thisCommand) => {
       const opts = thisCommand.optsWithGlobals();
       ctx.jsonOutput = Boolean(opts.json);
+      ctx.debugOutput = Boolean(opts.debug);
     })
     .addHelpText(
       'after',
@@ -66,7 +71,7 @@ Use "caixuan <command> --help" for details on a command.`
         process.exit(0);
       }
     }
-    outputError(error as Error, ctx.jsonOutput);
+    outputError(error as Error, ctx.jsonOutput, ctx.debugOutput);
     process.exit(ExitCode.ERROR);
   }
 

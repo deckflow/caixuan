@@ -145,21 +145,63 @@ export class FilesApi {
     };
 
     const limit = pLimit(5);
-    await Promise.all(
+    const parts = await Promise.all(
       multipartPartAuths.map((partAuth, index) =>
         limit(async () => {
           const start = index * chunkSize;
           const end = Math.min(start + chunkSize, file.data.byteLength);
           const chunk = file.data.subarray(start, end);
           const headers = this.authHeaders(partAuth);
-          await axios.put(partAuth.url, chunk, { headers, maxBodyLength: Infinity, maxContentLength: Infinity });
+          const res = await axios.put(partAuth.url, chunk, {
+            headers,
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity,
+          });
           progress[index] = 1;
           updateProgress();
+          return { partNumber: index + 1, eTag: this.parseETag(res.headers.etag) };
         })
       )
     );
 
+    const completeBody = this.buildCompleteMultipartBody(authResponse, parts);
+    await axios.post(auth.url, completeBody, {
+      headers: this.authHeaders(auth),
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+    });
+
     onProgress?.(1);
+  }
+
+  private parseETag(raw: string | undefined): string {
+    if (!raw) return '';
+    try {
+      return JSON.parse(raw) as string;
+    } catch {
+      return raw;
+    }
+  }
+
+  private buildCompleteMultipartBody(
+    authResponse: UploadAuthResponse,
+    parts: Array<{ partNumber: number; eTag: string }>
+  ): string | { parts: Array<{ partNumber: number; eTag: string }> } {
+    const useOssXml =
+      authResponse.cloudPlatform !== 'baidu' &&
+      authResponse.platform !== 'local';
+
+    if (!useOssXml) {
+      return { parts };
+    }
+
+    return [
+      '<CompleteMultipartUpload>',
+      ...parts.map(
+        (part) => `<Part><PartNumber>${part.partNumber}</PartNumber><ETag>${part.eTag}</ETag></Part>`
+      ),
+      '</CompleteMultipartUpload>',
+    ].join('');
   }
 
   private authHeaders(auth: AuthInfo | PartAuth): Record<string, string> {
