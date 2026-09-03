@@ -46,6 +46,24 @@ export class DocsApi {
     return res.data;
   }
 
+  /**
+   * Get a document release.
+   * `releaseId` supports mixed ids including `FIRST` / `LATEST`.
+   */
+  async release(
+    docId: string,
+    releaseId: string = 'LATEST',
+    includes?: ('creator' | 'record')[]
+  ): Promise<{ path?: string; [key: string]: unknown }> {
+    const res = await this.http.get<{ path?: string; [key: string]: unknown }>(
+      `/docs/${encodeURIComponent(docId)}/releases/${encodeURIComponent(releaseId)}`,
+      {
+        params: includes?.length ? { _includes: includes } : undefined,
+      }
+    );
+    return res.data;
+  }
+
   async create(params: CreateDocParams): Promise<unknown> {
     const sid = await this.http.resolveSpaceId(params.spaceId);
     const res = await this.http.post(`/spaces/${encodeURIComponent(sid)}/docs`, {

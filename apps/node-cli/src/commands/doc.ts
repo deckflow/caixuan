@@ -1,3 +1,8 @@
+import { createWriteStream } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
+import { dirname, resolve as resolvePath } from 'node:path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { Context } from '../context.js';
@@ -156,6 +161,50 @@ Examples:
         const client = await ctx.getClient();
         await client.docs.delete(docId);
         ctx.output({ id: docId, deleted: true }, () => chalk.green('✓ Document deleted'));
+      } catch (error) {
+        ctx.error(error);
+      }
+    });
+
+  doc
+    .command('down <doc-id>')
+    .description('Download the latest release of a document')
+    .requiredOption('-o, --out <path>', 'Local file path to save the download')
+    .addHelpText(
+      'after',
+      `
+Example:
+  $ caixuan doc down doc123 -o ./deck.pptx`
+    )
+    .action(async (docId: string, options: { out: string }) => {
+      try {
+        ctx.requireAuth();
+        const client = await ctx.getClient();
+        const outPath = resolvePath(options.out);
+
+        const spinner = ctx.createSpinner('Fetching latest release...');
+        const release = await client.docs.release(docId, 'LATEST');
+        const downloadUrl = release.path;
+        if (typeof downloadUrl !== 'string' || !downloadUrl) {
+          ctx.failSpinner(spinner, 'No download path');
+          ctx.error('Latest release has no downloadable path (missing permission or file).', 'NOT_FOUND');
+        }
+
+        spinner.text = 'Downloading release...';
+        await mkdir(dirname(outPath), { recursive: true });
+        const response = await fetch(downloadUrl);
+        if (!response.ok) {
+          ctx.failSpinner(spinner, 'Download failed');
+          ctx.error(`Download failed with HTTP ${response.status}`, 'DOWNLOAD_FAILED');
+        }
+        if (!response.body) {
+          ctx.failSpinner(spinner, 'Download failed');
+          ctx.error('Download response has no body', 'DOWNLOAD_FAILED');
+        }
+
+        await pipeline(Readable.fromWeb(response.body), createWriteStream(outPath));
+        ctx.succeedSpinner(spinner, 'Download complete');
+        ctx.output({ path: outPath }, () => outPath);
       } catch (error) {
         ctx.error(error);
       }

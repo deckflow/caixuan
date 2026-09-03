@@ -98,4 +98,20 @@ describe('@caixuan/sdk', () => {
     expect(seen[0]?.requestMethod).toBe('GET');
     expect(seen[0]?.requestUrl).toBe('http://localhost:3000/api/session');
   });
+
+  it('fetches doc release via docs.release', async () => {
+    const client = createCaixuan({
+      root: 'http://localhost:3000/api',
+      token: 'user_test-token',
+    });
+
+    mock.onGet('http://localhost:3000/api/docs/doc123/releases/LATEST').reply(200, {
+      id: 'rel-1',
+      path: 'https://cdn.example.com/file.pptx?sign=1',
+    });
+
+    const release = await client.docs.release('doc123', 'LATEST');
+    expect(release.id).toBe('rel-1');
+    expect(release.path).toBe('https://cdn.example.com/file.pptx?sign=1');
+  });
 });
