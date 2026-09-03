@@ -1,6 +1,6 @@
 import { createWriteStream } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
-import { dirname, resolve as resolvePath } from 'node:path';
+import { dirname, extname, resolve as resolvePath } from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { Command } from 'commander';
@@ -17,7 +17,7 @@ export function registerDocCommands(program: Command, ctx: Context): void {
     .description('List documents in the current space')
     .option('--start <n>', 'Pagination start index', '0')
     .option('--limit <n>', 'Max results', '20')
-    .option('--name <keyword>', 'Filter by name (fuzzy search)')
+    .option('--name <keyword>', 'Filter by name (substring match)')
     .option('--folder-id <id>', 'Parent folder ID')
     .option('--my', 'List via space.docs instead of space.ownDocs')
     .option('--table', 'Output as a table')
@@ -94,10 +94,20 @@ Example:
         const client = await ctx.getClient();
         const space = await client.spaces.get();
 
+        // Keep the source file extension when --name omits it (API rejects typeless names).
+        const uploadName = (() => {
+          if (!options.name) return undefined;
+          const ext = extname(options.file);
+          if (!ext) return options.name;
+          if (extname(options.name).toLowerCase() === ext.toLowerCase()) return options.name;
+          if (extname(options.name)) return options.name;
+          return `${options.name}${ext}`;
+        })();
+
         const spinner = ctx.createSpinner('Uploading file...');
         const uploaded = await client.files.upload(options.file, {
           spaceId: space.id,
-          name: options.name,
+          name: uploadName,
           onProgress: (p) => {
             if (!ctx.jsonOutput) spinner.text = `Uploading file... ${(p * 100).toFixed(1)}%`;
           },
@@ -106,11 +116,12 @@ Example:
 
         const parsedZone = Number.parseInt(options.zone, 10);
         const createSpinner = ctx.createSpinner('Creating document...');
+        // Do not pass `name` here: API oneOf rejects spaceId+fileId+name together.
+        // Custom titles come from the uploaded file name (see --name on upload above).
         const created = await client.docs.create({
           spaceId: space.id,
           fileId: uploaded.id,
-          name: options.name,
-          folderId: options.folderId,
+          folderId: options.folderId || undefined,
           zone: Number.isNaN(parsedZone) ? -1 : parsedZone,
         });
         ctx.succeedSpinner(createSpinner, 'Document created');

@@ -66,11 +66,16 @@ export class DocsApi {
 
   async create(params: CreateDocParams): Promise<unknown> {
     const sid = await this.http.resolveSpaceId(params.spaceId);
+    // API oneOf is [spaceId+fileId] | [spaceId+name]. Sending both `fileId` and
+    // `name` matches both branches and fails validation. File-based docs take
+    // their title from the uploaded file; `name` is for folder creation.
+    const { name, ...rest } = params;
     const res = await this.http.post(`/spaces/${encodeURIComponent(sid)}/docs`, {
-      ...params,
+      ...rest,
       spaceId: sid,
       folderId: params.folderId ?? '',
       zone: params.zone ?? -1,
+      ...(!params.fileId || params.isFolder ? { name } : {}),
     });
     return res.data;
   }

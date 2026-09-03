@@ -146,13 +146,12 @@ caixuan share create --name "Product intro" --doc <doc-id> --json
 caixuan share update <share-id> \
   --view-control contact \
   --allow-leave-contact yes \
-  --contact-type mobile \
-  --need-phone yes
+  --contact-type mobile
 
 caixuan share get-link <share-id>
 ```
 
-`--contact-type`: `none` | `mobile` | `email` | `wechat`.
+`--contact-type`: `none` | `mobile` | `email` | `wechat` (use `mobile` to collect a phone number).
 
 ---
 
@@ -210,6 +209,9 @@ caixuan doc down <doc-id> -o ./backup/quarterly-review.pptx
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Prefer injecting the token via env in CI (or run `caixuan config set-token` beforehand)
+export CAIXUAN_TOKEN="..."
+
 DOC_JSON=$(caixuan doc create --file ./dist/deck.pptx --name "Nightly Build" --json)
 DOC_ID=$(echo "$DOC_JSON" | jq -r '.data.id')
 
@@ -233,10 +235,12 @@ With `--json`, every command returns:
 **When:** The space is cluttered; search by name, rename, or delete stale items.
 
 ```bash
+# Document names support substring match
 caixuan doc list --name draft --table
 caixuan doc update <doc-id> --name "Final - client approved"
 
-caixuan share list --name old --table
+# Share names match the full name exactly
+caixuan share list --name "Final - client approved" --table
 caixuan share delete <share-id>
 caixuan doc delete <doc-id>
 ```

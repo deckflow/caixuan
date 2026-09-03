@@ -154,13 +154,12 @@ caixuan share create --name "产品介绍" --doc <doc-id> --json
 caixuan share update <share-id> \
   --view-control contact \
   --allow-leave-contact yes \
-  --contact-type mobile \
-  --need-phone yes
+  --contact-type mobile
 
 caixuan share get-link <share-id>
 ```
 
-`--contact-type` 可选：`none` | `mobile` | `email` | `wechat`。
+`--contact-type` 可选：`none` | `mobile` | `email` | `wechat`（收集手机号时用 `mobile`）。
 
 ---
 
@@ -250,10 +249,12 @@ caixuan share get-link "$SHARE_ID" --json
 **场景：** 空间里文档变多，需要按名称检索、改名或删除过期内容。
 
 ```bash
+# 文档名支持子串匹配
 caixuan doc list --name 草案 --table
 caixuan doc update <doc-id> --name "正式版-客户确认"
 
-caixuan share list --name 旧版 --table
+# 分享名按完整名称精确匹配
+caixuan share list --name "正式版-客户确认" --table
 caixuan share delete <share-id>
 caixuan doc delete <doc-id>
 ```

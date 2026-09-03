@@ -219,8 +219,9 @@ export class HttpClient {
   }
 
   private buildAuthHeaders(): Record<string, string> {
+    // Do not set Content-Type globally — DELETE/GET with application/json and an
+    // empty body is rejected by Fastify (FST_ERR_CTP_EMPTY_JSON_BODY).
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       'x-language': this.lang,
       'x-device-type': 'cli',
     };

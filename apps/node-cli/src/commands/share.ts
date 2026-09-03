@@ -21,7 +21,7 @@ export function registerShareCommands(program: Command, ctx: Context): void {
     .description('List shares in the current space')
     .option('--start <n>', 'Pagination start index', '0')
     .option('--limit <n>', 'Max results', '20')
-    .option('--name <keyword>', 'Filter by name (fuzzy search)')
+    .option('--name <keyword>', 'Filter by exact share name')
     .option('--table', 'Output as a table')
     .addHelpText(
       'after',

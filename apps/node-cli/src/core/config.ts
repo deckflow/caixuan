@@ -52,7 +52,7 @@ export class Config {
   }
 
   get token(): string | undefined {
-    return this.data.token;
+    return process.env.CAIXUAN_TOKEN || this.data.token;
   }
 
   set token(value: string | undefined) {
