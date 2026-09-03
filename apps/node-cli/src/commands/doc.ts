@@ -12,20 +12,38 @@ export function registerDocCommands(program: Command, ctx: Context): void {
     .description('List documents in the current space')
     .option('--start <n>', 'Pagination start index', '0')
     .option('--limit <n>', 'Max results', '20')
-    .option('--tag <tag>', 'Filter by tag')
-    .option('--name <name>', 'Filter by name')
+    .option('--name <keyword>', 'Filter by name (fuzzy search)')
+    .option('--folder-id <id>', 'Parent folder ID')
+    .option('--my', 'List via space.docs instead of space.ownDocs')
     .option('--table', 'Output as a table')
-    .addHelpText('after', '\nExamples:\n  $ caixuan doc list\n  $ caixuan doc list --table\n  $ caixuan doc list --json')
-    .action(async (options: { start: string; limit: string; tag?: string; name?: string; table?: boolean }) => {
+    .addHelpText(
+      'after',
+      '\nExamples:\n  $ caixuan doc list\n  $ caixuan doc list --my\n  $ caixuan doc list --name report\n  $ caixuan doc list --table\n  $ caixuan doc list --json'
+    )
+    .action(async (options: {
+      start: string;
+      limit: string;
+      name?: string;
+      folderId?: string;
+      my?: boolean;
+      table?: boolean;
+    }) => {
       try {
         ctx.requireAuth();
         const client = await ctx.getClient();
-        const result = await client.docs.list(undefined, {
+        const listParams = {
           _startIndex: parsePositiveInteger(options.start, '--start'),
           _maxResults: parsePositiveInteger(options.limit, '--limit'),
-          tag: options.tag,
           name: options.name,
-        });
+          ...(options.folderId !== undefined ? { folderId: options.folderId } : {}),
+        };
+        let useMy = Boolean(options.my);
+        let result = await client.docs.list(undefined, { ...listParams, my: useMy });
+        // Empty result: toggle --my once and retry
+        if (result.count === 0) {
+          useMy = !useMy;
+          result = await client.docs.list(undefined, { ...listParams, my: useMy });
+        }
         outputListResult(ctx, result, DOC_COLUMNS, {
           table: options.table,
           emptyMessage: 'No documents found.',
@@ -58,7 +76,7 @@ export function registerDocCommands(program: Command, ctx: Context): void {
     .requiredOption('--file <path>', 'Path to the file to upload')
     .option('--name <name>', 'Document name (defaults to file name)')
     .option('--folder-id <id>', 'Parent folder ID', '')
-    .option('--zone <n>', 'Zone number', '0')
+    .option('--zone <n>', 'Zone number', '-1')
     .addHelpText(
       'after',
       `
@@ -81,13 +99,14 @@ Example:
         });
         ctx.succeedSpinner(spinner, `Uploaded file ${uploaded.id}`);
 
+        const parsedZone = Number.parseInt(options.zone, 10);
         const createSpinner = ctx.createSpinner('Creating document...');
         const created = await client.docs.create({
           spaceId: space.id,
           fileId: uploaded.id,
           name: options.name,
           folderId: options.folderId,
-          zone: Number.parseInt(options.zone, 10) || 0,
+          zone: Number.isNaN(parsedZone) ? -1 : parsedZone,
         });
         ctx.succeedSpinner(createSpinner, 'Document created');
         ctx.output(created, () => chalk.green(`✓ Document created: ${(created as { id?: string }).id ?? ''}`));

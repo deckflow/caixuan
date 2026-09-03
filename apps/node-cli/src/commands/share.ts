@@ -21,15 +21,20 @@ export function registerShareCommands(program: Command, ctx: Context): void {
     .description('List shares in the current space')
     .option('--start <n>', 'Pagination start index', '0')
     .option('--limit <n>', 'Max results', '20')
+    .option('--name <keyword>', 'Filter by name (fuzzy search)')
     .option('--table', 'Output as a table')
-    .addHelpText('after', '\nExamples:\n  $ caixuan share list\n  $ caixuan share list --table\n  $ caixuan share list --json')
-    .action(async (options: { start: string; limit: string; table?: boolean }) => {
+    .addHelpText(
+      'after',
+      '\nExamples:\n  $ caixuan share list\n  $ caixuan share list --name demo\n  $ caixuan share list --table\n  $ caixuan share list --json'
+    )
+    .action(async (options: { start: string; limit: string; name?: string; table?: boolean }) => {
       try {
         ctx.requireAuth();
         const client = await ctx.getClient();
         const result = await client.shares.list(undefined, {
           _startIndex: parsePositiveInteger(options.start, '--start'),
           _maxResults: parsePositiveInteger(options.limit, '--limit'),
+          name: options.name,
         });
         outputListResult(ctx, result, SHARE_COLUMNS, {
           table: options.table,

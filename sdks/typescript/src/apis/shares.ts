@@ -2,16 +2,21 @@ import type { HttpClient } from '../http-client.js';
 import { parseListResult } from '../list-utils.js';
 import type { CreateShareParams, ListResult, PaginationParams, UpdateShareParams } from '../types.js';
 
+export interface ShareListParams extends PaginationParams {
+  name?: string;
+}
+
 export class SharesApi {
   constructor(private readonly http: HttpClient) {}
 
-  async list(spaceId?: string, params: PaginationParams = {}): Promise<ListResult<unknown>> {
+  async list(spaceId?: string, params: ShareListParams = {}): Promise<ListResult<unknown>> {
     const sid = await this.http.resolveSpaceId(spaceId);
     const res = await this.http.get(`/spaces/${encodeURIComponent(sid)}/shares`, {
       params: {
         spaceId: sid,
         _startIndex: params._startIndex ?? 0,
         _maxResults: params._maxResults ?? 20,
+        ...(params.name ? { name: params.name } : {}),
       },
     });
     return parseListResult(res.data, res.headers);

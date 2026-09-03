@@ -22,6 +22,12 @@ export interface PaginationParams {
   _maxResults?: number;
 }
 
+export interface RequestDebugInfo {
+  requestMethod?: string;
+  requestUrl?: string;
+  requestPayload?: unknown;
+}
+
 export interface CreateCaixuanOptions {
   root?: string;
   token?: string;
@@ -31,6 +37,8 @@ export interface CreateCaixuanOptions {
   /** nginx HTTP Basic Auth credentials in `username:password` form */
   basicAuth?: string;
   onUnauthorized?: () => Promise<{ token: string; spaceId?: string; userId?: string } | string>;
+  /** Called before every API request (useful for CLI `--debug`) */
+  onRequestDebug?: (info: RequestDebugInfo) => void;
 }
 
 export interface MySpace {

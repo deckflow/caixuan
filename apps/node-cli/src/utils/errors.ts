@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { APIError } from '@caixuan-cc/sdk';
+import { APIError, type RequestDebugInfo } from '@caixuan-cc/sdk';
 
 export function formatResponseBody(data: unknown): string {
   if (data === undefined || data === null) return '(empty)';
@@ -11,19 +11,37 @@ export function formatResponseBody(data: unknown): string {
   }
 }
 
-function formatApiDebugInfo(error: APIError): string[] {
+function formatApiDebugInfo(info: RequestDebugInfo): string[] {
   const lines: string[] = [];
-  if (error.requestMethod) {
-    lines.push(`${chalk.gray('VERB:')} ${error.requestMethod}`);
+  if (info.requestMethod) {
+    lines.push(`${chalk.gray('VERB:')} ${info.requestMethod}`);
   }
-  if (error.requestUrl) {
-    lines.push(`${chalk.gray('URL:')} ${error.requestUrl}`);
+  if (info.requestUrl) {
+    lines.push(`${chalk.gray('URL:')} ${info.requestUrl}`);
   }
-  if (error.requestPayload !== undefined) {
+  if (info.requestPayload !== undefined) {
     lines.push(chalk.gray('Payload:'));
-    lines.push(formatResponseBody(error.requestPayload));
+    lines.push(formatResponseBody(info.requestPayload));
   }
   return lines;
+}
+
+/** Print request verb/url/payload to stderr (used by `--debug` for every API call). */
+export function outputRequestDebug(info: RequestDebugInfo, jsonMode = false): void {
+  if (!info.requestMethod && !info.requestUrl && info.requestPayload === undefined) return;
+
+  if (jsonMode) {
+    const payload: Record<string, unknown> = { debug: true };
+    if (info.requestMethod) payload.verb = info.requestMethod;
+    if (info.requestUrl) payload.url = info.requestUrl;
+    if (info.requestPayload !== undefined) payload.payload = info.requestPayload;
+    console.error(JSON.stringify(payload));
+    return;
+  }
+
+  for (const line of formatApiDebugInfo(info)) {
+    console.error(line);
+  }
 }
 
 export function outputError(error: Error | APIError, jsonMode: boolean, debug = false): void {

@@ -17,9 +17,11 @@ export type {
   FileUploadResult,
   ListResult,
   MySpace,
+  RequestDebugInfo,
   SessionInfo,
   UpdateShareParams,
 } from './types.js';
+export { extractRequestDebugInfo } from './errors.js';
 
 export interface CaixuanClient {
   readonly root: string;

@@ -2,7 +2,7 @@ import ora from 'ora';
 import { APIError, createCaixuan, type CaixuanClient } from '@caixuan-cc/sdk';
 import { Config } from './core/config.js';
 import { runLoginFlow } from './core/auth.js';
-import { ExitCode, outputError } from './utils/errors.js';
+import { ExitCode, outputError, outputRequestDebug } from './utils/errors.js';
 
 type SpinnerLike = {
   text: string;
@@ -39,6 +39,11 @@ export class Context {
           const reason = this.config.token ? 'unauthorized' : 'explicit';
           const token = await this.ensureLoggedIn(3737, reason);
           return { token, spaceId: this.config.spaceId, userId: this.config.userId };
+        },
+        onRequestDebug: (info) => {
+          if (this.debugOutput) {
+            outputRequestDebug(info, this.jsonOutput);
+          }
         },
       });
     } else {

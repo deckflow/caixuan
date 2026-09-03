@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { APIError } from '@caixuan-cc/sdk';
-import { outputError } from '../../src/utils/errors.js';
+import { outputError, outputRequestDebug } from '../../src/utils/errors.js';
 
 describe('outputError', () => {
   afterEach(() => {
@@ -51,5 +51,50 @@ describe('outputError', () => {
     expect(payload.verb).toBe('POST');
     expect(payload.url).toBe('https://app.caixuan.cc/api/spaces/abc/docs');
     expect(payload.payload).toEqual({ fileId: 'file123' });
+  });
+});
+
+describe('outputRequestDebug', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('prints verb/url/payload on stderr', () => {
+    const stderr = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    outputRequestDebug({
+      requestMethod: 'GET',
+      requestUrl: 'https://app.caixuan.cc/api/spaces/abc/docs',
+      requestPayload: { params: { name: 'demo' } },
+    });
+
+    const output = stderr.mock.calls.flat().join('\n');
+    expect(output).toContain('VERB:');
+    expect(output).toContain('GET');
+    expect(output).toContain('URL:');
+    expect(output).toContain('https://app.caixuan.cc/api/spaces/abc/docs');
+    expect(output).toContain('Payload:');
+    expect(output).toContain('demo');
+  });
+
+  it('prints json line in json mode', () => {
+    const stderr = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    outputRequestDebug(
+      {
+        requestMethod: 'POST',
+        requestUrl: 'https://app.caixuan.cc/api/spaces/abc/shares',
+        requestPayload: { name: 'demo' },
+      },
+      true
+    );
+
+    const payload = JSON.parse(String(stderr.mock.calls[0]?.[0]));
+    expect(payload).toEqual({
+      debug: true,
+      verb: 'POST',
+      url: 'https://app.caixuan.cc/api/spaces/abc/shares',
+      payload: { name: 'demo' },
+    });
   });
 });

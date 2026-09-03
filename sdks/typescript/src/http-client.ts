@@ -1,5 +1,5 @@
 import axios, { AxiosHeaders, type AxiosInstance } from 'axios';
-import { APIError, getRetryDelaysMs, isRetriableAxiosError } from './errors.js';
+import { APIError, extractRequestDebugInfo, getRetryDelaysMs, isRetriableAxiosError } from './errors.js';
 import { DEFAULT_ROOT, type CreateCaixuanOptions } from './types.js';
 
 type RetriableConfig = Record<string, unknown> & {
@@ -21,6 +21,7 @@ export class HttpClient {
   private resolvedSpaceIdPromise?: Promise<string>;
   private authRefreshPromise?: Promise<AuthRefreshResult>;
   private readonly onUnauthorized?: CreateCaixuanOptions['onUnauthorized'];
+  private readonly onRequestDebug?: CreateCaixuanOptions['onRequestDebug'];
 
   constructor(options: CreateCaixuanOptions = {}) {
     this.root = (options.root ?? DEFAULT_ROOT).replace(/\/$/, '');
@@ -31,6 +32,7 @@ export class HttpClient {
     this.basicAuth = options.basicAuth;
     this.spaceIdExplicit = Boolean(options.spaceId);
     this.onUnauthorized = options.onUnauthorized;
+    this.onRequestDebug = options.onRequestDebug;
 
     this.client = axios.create({
       baseURL: this.root,
@@ -47,13 +49,17 @@ export class HttpClient {
         for (const [key, value] of Object.entries(authHeaders)) {
           mutable.set(key, value);
         }
-        return config;
+      } else {
+        config.headers = AxiosHeaders.from({
+          ...(headers as Record<string, string> | undefined),
+          ...authHeaders,
+        });
       }
 
-      config.headers = AxiosHeaders.from({
-        ...(headers as Record<string, string> | undefined),
-        ...authHeaders,
-      });
+      if (this.onRequestDebug) {
+        this.onRequestDebug(extractRequestDebugInfo(config));
+      }
+
       return config;
     });
 

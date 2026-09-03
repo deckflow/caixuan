@@ -1,4 +1,5 @@
 import type { AxiosError } from 'axios';
+import type { RequestDebugInfo } from './types.js';
 
 function tryHeaderValue(v: unknown): string | undefined {
   if (typeof v === 'string' && v.trim()) return v.trim();
@@ -83,12 +84,12 @@ export function isRetriableAxiosError(error: AxiosError): boolean {
   return isRetriableHTTPStatus(error.response.status);
 }
 
-function extractRequestContext(error: AxiosError): {
-  requestMethod?: string;
-  requestUrl?: string;
-  requestPayload?: unknown;
-} {
-  const config = error.config;
+export function extractRequestDebugInfo(config?: {
+  method?: string;
+  url?: string;
+  data?: unknown;
+  params?: unknown;
+}): RequestDebugInfo {
   if (!config) return {};
 
   const method = config.method?.toUpperCase();
@@ -107,7 +108,7 @@ function extractRequestContext(error: AxiosError): {
     }
   }
 
-  if (config.params && typeof config.params === 'object' && Object.keys(config.params).length > 0) {
+  if (config.params && typeof config.params === 'object' && Object.keys(config.params as object).length > 0) {
     payload =
       payload !== undefined ? { body: payload, params: config.params } : { params: config.params };
   }
@@ -142,7 +143,7 @@ export class APIError extends Error {
         : undefined;
     const base = `API Error (${status ?? 'unknown'}): ${errorMessage}`;
     const message = requestId ? `${base} [X-RequestId: ${requestId}]` : base;
-    const { requestMethod, requestUrl, requestPayload } = extractRequestContext(error);
+    const { requestMethod, requestUrl, requestPayload } = extractRequestDebugInfo(error.config);
     return new APIError(
       message,
       status,
@@ -159,7 +160,7 @@ export class APIError extends Error {
     const requestId =
       extractRequestIdFromHeaders(error.response?.headers) ?? extractRequestIdFromBody(error.response?.data);
     const message = 'Authentication expired. Please log in again.';
-    const { requestMethod, requestUrl, requestPayload } = extractRequestContext(error);
+    const { requestMethod, requestUrl, requestPayload } = extractRequestDebugInfo(error.config);
     return new APIError(
       requestId ? `${message} [X-RequestId: ${requestId}]` : message,
       401,

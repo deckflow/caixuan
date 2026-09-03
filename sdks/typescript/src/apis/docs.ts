@@ -3,24 +3,37 @@ import { parseListResult } from '../list-utils.js';
 import type { CreateDocParams, ListResult, PaginationParams } from '../types.js';
 
 export interface DocListParams extends PaginationParams {
-  tag?: string;
   name?: string;
-  roles?: string;
+  folderId?: string;
+  zone?: number;
+  /** When true, list via `space.docs`; otherwise `space.ownDocs`. */
+  my?: boolean;
+  /** Comma-separated includes, e.g. `creator,portfolio` */
+  includes?: string[];
 }
 
 export class DocsApi {
   constructor(private readonly http: HttpClient) {}
 
+  /**
+   * List documents in a space.
+   * - default: `space.ownDocs` (`/spaces/:id/owner/docs`)
+   * - `my: true`: `space.docs` (`/spaces/:id/docs`)
+   */
   async list(spaceId?: string, params: DocListParams = {}): Promise<ListResult<unknown>> {
     const sid = await this.http.resolveSpaceId(spaceId);
-    const res = await this.http.get(`/spaces/${encodeURIComponent(sid)}/docs`, {
+    const path = params.my
+      ? `/spaces/${encodeURIComponent(sid)}/docs`
+      : `/spaces/${encodeURIComponent(sid)}/owner/docs`;
+    const res = await this.http.get(path, {
       params: {
         spaceId: sid,
         _startIndex: params._startIndex ?? 0,
         _maxResults: params._maxResults ?? 20,
-        ...(params.tag ? { tag: params.tag } : {}),
         ...(params.name ? { name: params.name } : {}),
-        ...(params.roles ? { roles: params.roles } : {}),
+        ...(params.folderId !== undefined ? { folderId: params.folderId } : {}),
+        ...(params.zone !== undefined ? { zone: params.zone } : {}),
+        ...(params.includes?.length ? { _includes: params.includes } : {}),
       },
     });
     return parseListResult(res.data, res.headers);
@@ -39,7 +52,7 @@ export class DocsApi {
       ...params,
       spaceId: sid,
       folderId: params.folderId ?? '',
-      zone: params.zone ?? 0,
+      zone: params.zone ?? -1,
     });
     return res.data;
   }

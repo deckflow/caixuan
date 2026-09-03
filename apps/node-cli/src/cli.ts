@@ -33,7 +33,7 @@ async function main() {
     .description('Caixuan CLI — manage spaces, shares, documents and members')
     .version(CLI_VERSION)
     .option('--json', 'Output structured JSON for scripting and AI agents')
-    .option('--debug', 'Print request details when API calls fail')
+    .option('--debug', 'Print request verb, URL and payload for every API call')
     .hook('preAction', (thisCommand) => {
       const opts = thisCommand.optsWithGlobals();
       ctx.jsonOutput = Boolean(opts.json);

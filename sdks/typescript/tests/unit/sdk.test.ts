@@ -82,4 +82,20 @@ describe('@caixuan/sdk', () => {
     expect(err.requestPayload).toEqual({ spaceId: 'abc', fileId: 'file123', name: 'demo.pptx' });
     expect(err.requestId).toBe('req-debug-1');
   });
+
+  it('invokes onRequestDebug for every request', async () => {
+    const seen: Array<{ requestMethod?: string; requestUrl?: string; requestPayload?: unknown }> = [];
+    const client = createCaixuan({
+      root: 'http://localhost:3000/api',
+      token: 'user_test-token',
+      onRequestDebug: (info) => seen.push(info),
+    });
+
+    mock.onGet('http://localhost:3000/api/session').reply(200, { id: 'user-1' });
+    await client.session.get();
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.requestMethod).toBe('GET');
+    expect(seen[0]?.requestUrl).toBe('http://localhost:3000/api/session');
+  });
 });
