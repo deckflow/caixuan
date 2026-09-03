@@ -1,6 +1,6 @@
 {
   "name": "@caixuan-cc/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Caixuan CLI - manage spaces, shares, docs and members",
   "license": "MIT",
   "type": "module",

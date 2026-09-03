@@ -1,6 +1,6 @@
 {
   "name": "@caixuan-cc/sdk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Caixuan TypeScript SDK",
   "license": "MIT",
   "type": "module",
