@@ -28,6 +28,8 @@ caixuan doc create --file ./deck.pptx
 
 更多命令说明、认证配置及 JSON 输出格式，请参阅 **[apps/node-cli/README.zh-CN.md](apps/node-cli/README.zh-CN.md)**。
 
+典型使用场景（上传并分享、加密链接、限时失效、CI 发布等）：**[apps/node-cli/docs/use-cases.zh-CN.md](apps/node-cli/docs/use-cases.zh-CN.md)**。
+
 ## SDK（TypeScript）
 
 包名：`@caixuan-cc/sdk`，用于在 Node.js 程序中调用 Caixuan API。

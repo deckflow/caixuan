@@ -43,6 +43,10 @@ caixuan doc create --file ./deck.pptx
 caixuan member list
 ```
 
+## 典型场景
+
+上传并分享、密码保护、限时失效、付费查看、邀请成员、CI 自动发布等端到端示例，见 **[docs/use-cases.zh-CN.md](docs/use-cases.zh-CN.md)**。
+
 ## 命令概览
 
 | 分组 | 命令 |

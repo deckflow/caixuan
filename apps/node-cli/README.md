@@ -43,6 +43,10 @@ caixuan doc create --file ./deck.pptx
 caixuan member list
 ```
 
+## Typical use cases
+
+End-to-end examples (upload & share, password lock, expiry, paid access, invite members, CI publish, and more): **[docs/use-cases.md](docs/use-cases.md)**.
+
 ## Command overview
 
 | Group | Commands |

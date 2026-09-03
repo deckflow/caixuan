@@ -28,6 +28,8 @@ caixuan doc create --file ./deck.pptx
 
 For more commands, authentication setup, and JSON output formats, see **[apps/node-cli/README.md](apps/node-cli/README.md)**.
 
+Typical use cases (upload & share, password links, expiry, CI publish, and more): **[apps/node-cli/docs/use-cases.md](apps/node-cli/docs/use-cases.md)**.
+
 ## SDK (TypeScript)
 
 Package: `@caixuan-cc/sdk`. Call the Caixuan API from Node.js applications.
